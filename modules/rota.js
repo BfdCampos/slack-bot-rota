@@ -8,29 +8,37 @@ class Rota {
     this.csvWriter = createCsvWriter({
       path: 'users.csv',
       header: [
-        { id: 'username', title: 'username' },
+        { id: 'userId', title: 'userId' },
         { id: 'duty_days', title: 'duty_days' }
       ]
     })
   }
 
   add (username) {
-    const user = this.users.find((user) => user.username === username)
-    if (!user) {
-      this.users.push({ username, duty_days: 0 })
-      return `Added ${username} to the rota.`
+    if (username) {
+      const userId = username.replace(/[<@|>]/g, '')
+      const user = this.users.find((user) => user.userId === userId)
+      if (!user) {
+        this.users.push({ userId, duty_days: 0 })
+        this.save()
+        return `Added <@${userId}> to the rota.`
+      } else {
+        return `<@${userId}> is already in the rota.`
+      }
     } else {
-      return `${username} is already in the rota.`
+      return 'Please specify a valid user.'
     }
   }
 
-  remove (user) {
-    const index = this.users.indexOf(user)
+  remove (username) {
+    const userId = username.replace(/[<@|>]/g, '')
+    const index = this.users.indexOf(userId)
     if (index > -1) {
-      this.users.splice(index, 1)
-      return `Removed ${user} from the rota.`
+      const removedUser = this.users.splice(index, 1)[0]
+      this.save()
+      return `Removed <@${userId}> from the rota.`
     } else {
-      return `${user} is not in the rota.`
+      return `<@${userId}> is not in the rota.`
     }
   }
 
@@ -38,7 +46,8 @@ class Rota {
     if (this.users.length === 0) {
       return 'The rota is currently empty.'
     } else {
-      return `Rota: ${this.users.join(', ')}`
+      const userMentions = this.users.map((user) => `${user.userId}`)
+      return `Rota: ${userMentions.join(', ')}`
     }
   }
 
@@ -61,7 +70,7 @@ class Rota {
     // Save the updated user data
     this.save()
 
-    return `Today's duty is on <@${user.username}>.`
+    return `Today's duty is on <@${user.userId}>.`
   }
 
   reset () {
@@ -72,6 +81,10 @@ class Rota {
   }
 
   save () {
+    const records = this.users.map((user) => ({
+      userId: user.userId,
+      duty_days: user.duty_days
+    }))
     return this.csvWriter.writeRecords(this.users)
   }
 
@@ -82,7 +95,7 @@ class Rota {
         .pipe(csvParser())
         .on('data', (row) => {
           users.push({
-            username: row.username,
+            userId: row.userId,
             duty_days: Number(row.duty_days)
           })
         })

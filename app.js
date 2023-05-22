@@ -52,15 +52,15 @@ app.command('/rota', async ({ command, ack, respond }) => {
   await ack()
   // Parse the text of the command to determine what action to take
   const action = command.text.split(' ')[0]
-  const user = command.text.split(' ')[1]
+  const username = command.text.split(' ')[1]
 
   let responseText = ''
 
   if (action === 'add') {
-    responseText = rota.add(user)
+    responseText = rota.add(username)
     await rota.save()
   } else if (action === 'remove') {
-    responseText = rota.remove(user)
+    responseText = rota.remove(username)
     await rota.save()
   } else if (action === 'list') {
     responseText = rota.list()
