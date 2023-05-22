@@ -10,7 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@slack/bolt": "^3.13.1"
+    "@slack/bolt": "^3.13.1",
+    "dotenv": "^16.0.3"
   },
   "devDependencies": {
     "eslint": "^8.41.0",
