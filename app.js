@@ -58,6 +58,13 @@ app.command('/rota', async ({ command, ack, respond }) => {
     responseText = rota.list()
   } else if (action === 'change_order') {
     responseText = rota.changeOrder(username, order)
+  } else if (action === 'set_days') {
+    const days = command.text.split(' ')[1]
+    if (days) {
+      responseText = rota.setDays(days)
+    } else {
+      responseText = 'Please specify the days for the rota.'
+    }
   } else {
     responseText =
       "Sorry, I don't understand that command. Try /rota add @user, /rota remove @user, or /rota list."

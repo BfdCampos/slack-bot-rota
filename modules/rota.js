@@ -5,13 +5,25 @@ const createCsvWriter = require("csv-writer").createObjectCsvWriter;
 class Rota {
   constructor() {
     this.users = [];
+    this.time = "08:00";
     this.csvWriter = createCsvWriter({
-      path: "users.csv",
+      path: "storage/users.csv",
       header: [
         { id: "userId", title: "userId" },
         { id: "duty_days", title: "duty_days" },
       ],
     });
+    try {
+      this.days = require("./storage/schedule.json").days || [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+      ];
+    } catch (error) {
+      this.days = ["mon", "tue", "wed", "thu", "fri"];
+    }
   }
 
   add(username, order) {
@@ -58,12 +70,25 @@ class Rota {
   }
 
   list() {
+    let responseText = "";
+
+    // List of users
     if (this.users.length === 0) {
-      return "The rota is currently empty.";
+      responseText += "The rota is currently empty.\n";
     } else {
-      const userMentions = this.users.map((user) => `<@${user.userId}>`);
-      return `Rota: ${userMentions.join(", ")}`;
+      const userMentions = this.users.map(
+        (user) => `<@${user.userId}> (${user.order})`
+      );
+      responseText += `> **Rota:** ${userMentions.join(", ")}\n`;
     }
+
+    // Active days
+    responseText += `> **Active days:** ${this.days.join(", ")}\n`;
+
+    // Announcement time
+    responseText += `> **Announcement time:** ${this.time}`;
+
+    return responseText;
   }
 
   getCurrentUser() {
@@ -120,16 +145,33 @@ class Rota {
     this.save();
   }
 
+  setDays(daysString) {
+    const daysArray = daysString
+      .split(",")
+      .map((day) => day.trim().toLowerCase());
+    const validDays = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+    // Validate that all input days are valid
+    if (daysArray.some((day) => !validDays.includes(day))) {
+      return "Please enter valid days (Mon, Tue, Wed, Thu, Fri, Sat, Sun).";
+    }
+
+    this.days = daysArray;
+    this.save();
+
+    return `Set rota days to: ${this.days.join(", ")}.`;
+  }
+
   save() {
     const records = this.users.map((user) => ({
       userId: user.userId,
-      duty_days: user.duty_days,
       order: user.order,
+      duty_days: user.duty_days,
     }));
 
     // Update the csvWriter to include the "order" field
     this.csvWriter = createCsvWriter({
-      path: "users.csv",
+      path: "storage/users.csv",
       header: [
         { id: "userId", title: "userId" },
         { id: "duty_days", title: "duty_days" },
@@ -137,13 +179,25 @@ class Rota {
       ],
     });
 
-    return this.csvWriter.writeRecords(records);
+    // Write the user records to the CSV file
+    this.csvWriter.writeRecords(records);
+
+    // Save days to schedule.json
+    fs.writeFile(
+      "./schedule.json",
+      JSON.stringify({ days: this.days, time: this.time }),
+      (error) => {
+        if (error) {
+          console.error("Failed to save schedule:", error);
+        }
+      }
+    );
   }
 
   load() {
     return new Promise((resolve, reject) => {
       const users = [];
-      fs.createReadStream("users.csv")
+      fs.createReadStream("storage/users.csv")
         .pipe(csvParser())
         .on("data", (row) => {
           users.push({
@@ -157,6 +211,20 @@ class Rota {
           resolve();
         })
         .on("error", reject);
+    });
+  }
+
+  loadSchedule() {
+    return new Promise((resolve, reject) => {
+      fs.readFile("schedule.json", (err, data) => {
+        if (err) reject(err);
+        else {
+          const schedule = JSON.parse(data);
+          this.days = schedule.days;
+          this.time = schedule.time;
+          resolve();
+        }
+      });
     });
   }
 }
