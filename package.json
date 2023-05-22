@@ -1,0 +1,12 @@
+{
+  "name": "slack-bot-rota",
+  "version": "1.0.0",
+  "description": "This is a slack bot that allows the user to create a rota for specified slack users.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
