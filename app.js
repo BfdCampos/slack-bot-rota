@@ -27,15 +27,6 @@ const rota = new Rota();
   console.log('⚡️ Bolt app is running!')
 })()
 
-fs.createReadStream('users.csv')
-  .pipe(csvParser())
-  .on('data', (row) => {
-    rota.add(row.username)
-  })
-  .on('end', () => {
-    console.log('CSV file successfully processed')
-  })
-
 app.command('/test_announce_rota', async ({ command, ack, respond }) => {
   // Acknowledge command request
   await ack()
@@ -53,17 +44,20 @@ app.command('/rota', async ({ command, ack, respond }) => {
   // Parse the text of the command to determine what action to take
   const action = command.text.split(' ')[0]
   const username = command.text.split(' ')[1]
+  const order = command.text.split(' ')[2]
 
   let responseText = ''
 
   if (action === 'add') {
-    responseText = rota.add(username)
+    responseText = rota.add(username, order)
     await rota.save()
   } else if (action === 'remove') {
     responseText = rota.remove(username)
     await rota.save()
   } else if (action === 'list') {
     responseText = rota.list()
+  } else if (action === 'change_order') {
+    responseText = rota.changeOrder(username, order)
   } else {
     responseText =
       "Sorry, I don't understand that command. Try /rota add @user, /rota remove @user, or /rota list."
