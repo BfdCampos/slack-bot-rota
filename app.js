@@ -1,6 +1,9 @@
 require('dotenv').config()
 
 const { App, LogLevel, SocketModeReceiver } = require('@slack/bolt')
+const fs = require('fs')
+const csvParser = require('csv-parser')
+const createCsvWriter = require('csv-writer').createObjectCsvWriter
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -12,19 +15,17 @@ const app = new App({
 
 app.message('hello', async ({ message, say }) => {
   await say(`Hello <@${message.user}>`)
-});
-
-(async () => {
-  // Start your app
-  await app.start()
-  console.log('⚡️ Bolt app is running!')
-})()
+})
 
 // app.js
 
 class Rota {
   constructor () {
     this.users = []
+    this.csvWriter = createCsvWriter({
+      path: 'users.csv',
+      header: [{ id: 'username', title: 'username' }]
+    })
   }
 
   add (user) {
@@ -60,12 +61,47 @@ class Rota {
     }
     const today = new Date()
     const index = today.getDate() % this.users.length
-    return `Today's duty is on <@${this.users[index]}>.`
+    return `Today's duty is on ${this.users[index]}.`
+  }
+
+  save () {
+    const records = this.users.map((username) => ({ username }))
+    return this.csvWriter.writeRecords(records)
+  }
+
+  load () {
+    return new Promise((resolve, reject) => {
+      const users = []
+      fs.createReadStream('users.csv')
+        .pipe(csvParser())
+        .on('data', (row) => {
+          users.push(row.username)
+        })
+        .on('end', () => {
+          this.users = users
+          resolve()
+        })
+        .on('error', reject)
+    })
   }
 }
 
-// Create an instance of Rota for our app to use
-const rota = new Rota()
+const rota = new Rota();
+
+(async () => {
+  await rota.load()
+  await app.start()
+  console.log('⚡️ Bolt app is running!')
+})()
+
+fs.createReadStream('users.csv')
+  .pipe(csvParser())
+  .on('data', (row) => {
+    rota.add(row.username)
+  })
+  .on('end', () => {
+    console.log('CSV file successfully processed')
+  })
 
 app.command('/test_announce_rota', async ({ command, ack, respond }) => {
   // Acknowledge command request
@@ -90,8 +126,10 @@ app.command('/rota', async ({ command, ack, respond }) => {
 
   if (action === 'add') {
     responseText = rota.add(user)
+    await rota.save()
   } else if (action === 'remove') {
     responseText = rota.remove(user)
+    await rota.save()
   } else if (action === 'list') {
     responseText = rota.list()
   } else {
