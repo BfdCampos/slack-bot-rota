@@ -5,7 +5,7 @@ const fs = require('fs')
 const csvParser = require('csv-parser')
 const createCsvWriter = require('csv-writer').createObjectCsvWriter
 
-const Rota = require('./rota')
+const Rota = require('./modules/rota')
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
