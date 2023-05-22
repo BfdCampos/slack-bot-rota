@@ -24,16 +24,20 @@ class Rota {
     this.users = []
     this.csvWriter = createCsvWriter({
       path: 'users.csv',
-      header: [{ id: 'username', title: 'username' }]
+      header: [
+        { id: 'username', title: 'username' },
+        { id: 'duty_days', title: 'duty_days' }
+      ]
     })
   }
 
-  add (user) {
-    if (!this.users.includes(user)) {
-      this.users.push(user)
-      return `Added ${user} to the rota.`
+  add (username) {
+    const user = this.users.find((user) => user.username === username)
+    if (!user) {
+      this.users.push({ username, duty_days: 0 })
+      return `Added ${username} to the rota.`
     } else {
-      return `${user} is already in the rota.`
+      return `${username} is already in the rota.`
     }
   }
 
@@ -59,14 +63,33 @@ class Rota {
     if (this.users.length === 0) {
       return 'No one is on duty today.'
     }
-    const today = new Date()
-    const index = today.getDate() % this.users.length
-    return `Today's duty is on ${this.users[index]}.`
+
+    // Sort the users by the number of duty days (ascending)
+    const sortedUsers = [...this.users].sort(
+      (a, b) => a.duty_days - b.duty_days
+    )
+
+    // Select the first user in the sorted list (the user with the fewest duty days)
+    const user = sortedUsers[0]
+
+    // Increment the number of duty days for this user
+    user.duty_days++
+
+    // Save the updated user data
+    this.save()
+
+    return `Today's duty is on <@${user.username}>.`
+  }
+
+  reset () {
+    for (const user of this.users) {
+      user.duty_days = 0
+    }
+    this.save()
   }
 
   save () {
-    const records = this.users.map((username) => ({ username }))
-    return this.csvWriter.writeRecords(records)
+    return this.csvWriter.writeRecords(this.users)
   }
 
   load () {
@@ -75,7 +98,10 @@ class Rota {
       fs.createReadStream('users.csv')
         .pipe(csvParser())
         .on('data', (row) => {
-          users.push(row.username)
+          users.push({
+            username: row.username,
+            duty_days: Number(row.duty_days)
+          })
         })
         .on('end', () => {
           this.users = users
@@ -117,7 +143,6 @@ app.command('/test_announce_rota', async ({ command, ack, respond }) => {
 
 app.command('/rota', async ({ command, ack, respond }) => {
   await ack()
-
   // Parse the text of the command to determine what action to take
   const action = command.text.split(' ')[0]
   const user = command.text.split(' ')[1]
