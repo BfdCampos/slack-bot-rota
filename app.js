@@ -5,6 +5,7 @@ const fs = require("fs");
 const csvParser = require("csv-parser");
 const createCsvWriter = require("csv-writer").createObjectCsvWriter;
 const cron = require("node-cron");
+const bodyParser = require("body-parser");
 
 const Rota = require("./modules/rota");
 require("./modules/database");
@@ -20,6 +21,9 @@ const app = new App({
   }),
   logLevel: LogLevel.DEBUG,
 });
+
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 app.message("hello", async ({ message, say }) => {
   await say(`Hello <@${message.user}>`);
