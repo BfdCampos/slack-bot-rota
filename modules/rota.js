@@ -36,7 +36,7 @@ class Rota {
       if (!user) {
         let newOrder
         if (order) {
-          newOrder = parseInt(order, 10)
+          newOrder = Math.min(parseInt(order, 10), this.users.length + 1)
           this.users.forEach((user) => {
             if (user.order >= newOrder) {
               user.order++
@@ -98,43 +98,46 @@ class Rota {
       return 'No one is on duty today.'
     }
 
-    // Sort the users by the number of duty days (ascending)
+    // Sort the users by their order value (ascending)
     const sortedUsers = [...this.users].sort((a, b) => a.order - b.order)
 
-    // Select the first user in the sorted list (the user with the fewest duty days)
-    const user = sortedUsers[0]
+    // Select the user with the minimum order value (the first user in the sorted list)
+    const currentUser = sortedUsers[0]
 
-    // Increment the number of duty days for this user
-    user.duty_days++
-
-    // Set this user's order to one more than the current maximum order value
-    const maxOrder = Math.max(...this.users.map((user) => user.order))
-    user.order = maxOrder + 1
+    // Rotate the order of users in the rota
+    for (const user of this.users) {
+      if (user.order === currentUser.order) {
+        user.order = this.users.length
+      } else if (user.order > currentUser.order) {
+        user.order--
+      }
+    }
 
     // Save the updated user data
     this.save()
 
-    return `Today's duty is on <@${user.userId}>.`
+    return `Today's duty is on <@${currentUser.userId}>.`
   }
 
   changeOrder (username, newOrder) {
     const userId = username.replace(/[<@|>]/g, '')
     const user = this.users.find((user) => user.userId === userId)
-    const newOrderInt = parseInt(newOrder, 10)
+    const newOrderInt = Math.min(parseInt(newOrder, 10), this.users.length)
 
     if (user) {
-      // if we found the user, increment the order of users with the same or higher order
-      this.users.forEach((user) => {
-        if (user.order >= newOrderInt) {
-          user.order++
+      this.users.forEach((otherUser) => {
+        if (
+          otherUser.userId !== user.userId &&
+          otherUser.order >= newOrderInt
+        ) {
+          otherUser.order--
         }
       })
 
-      // then update the user's order
       user.order = newOrderInt
       this.save()
 
-      return `Changed <@${userId}>'s order to ${newOrder}.`
+      return `Changed <@${userId}>'s order to ${newOrderInt}.`
     } else {
       return `<@${userId}> is not in the rota.`
     }
