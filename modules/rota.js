@@ -7,6 +7,7 @@ class Rota {
     this.users = []
     this.admins = ['bruno.campos']
     this.time = '08:00'
+    this.channelId = ''
     this.csvWriter = createCsvWriter({
       path: 'storage/users.csv',
       header: [
@@ -199,7 +200,11 @@ class Rota {
     // Save days to storage/schedule.json
     fs.writeFile(
       './storage/schedule.json',
-      JSON.stringify({ days: this.days, time: this.time }),
+      JSON.stringify({
+        days: this.days,
+        time: this.time,
+        channelId: this.channelId
+      }),
       (error) => {
         if (error) {
           console.error('Failed to save schedule:', error)
@@ -228,18 +233,15 @@ class Rota {
     })
   }
 
-  loadSchedule () {
-    return new Promise((resolve, reject) => {
-      fs.readFile('storage/schedule.json', (err, data) => {
-        if (err) reject(err)
-        else {
-          const schedule = JSON.parse(data)
-          this.days = schedule.days
-          this.time = schedule.time
-          resolve()
-        }
-      })
-    })
+  async loadSchedule () {
+    const scheduleFileContent = await fs.promises.readFile(
+      './storage/schedule.json',
+      'utf-8'
+    )
+    const schedule = JSON.parse(scheduleFileContent)
+    this.time = schedule.time
+    this.days = schedule.days
+    this.channelId = schedule.channelId
   }
 
   addAdmin (userId) {

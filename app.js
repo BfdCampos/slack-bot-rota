@@ -4,6 +4,7 @@ const { App, LogLevel, SocketModeReceiver } = require("@slack/bolt");
 const fs = require("fs");
 const csvParser = require("csv-parser");
 const createCsvWriter = require("csv-writer").createObjectCsvWriter;
+const cron = require("node-cron");
 
 const Rota = require("./modules/rota");
 
@@ -25,6 +26,37 @@ const rota = new Rota();
   await rota.load();
   await rota.loadSchedule();
   rota.addAdmin("U022D1F2XTR");
+
+  const [hour, minute] = rota.time.split(":");
+  const daysMapping = {
+    sun: 0,
+    mon: 1,
+    tue: 2,
+    wed: 3,
+    thu: 4,
+    fri: 5,
+    sat: 6,
+  };
+  const daysInCronFormat = rota.days.map((day) => daysMapping[day]).join(",");
+
+  const cronTime = `${minute} ${hour} * * ${daysInCronFormat}`;
+
+  cron.schedule(cronTime, async () => {
+    // This will run every day at the specified time
+    const message = rota.getCurrentUser();
+    try {
+      // Use chat.postMessage method to send a message from your app
+      const result = await app.client.chat.postMessage({
+        token: process.env.SLACK_BOT_TOKEN,
+        channel: rota.channelId,
+        text: message,
+      });
+      console.log("Rota announced:", result);
+    } catch (error) {
+      console.error("Error announcing rota:", error);
+    }
+  });
+
   await app.start();
   console.log("⚡️ Bolt app is running!");
 })();
@@ -176,8 +208,5 @@ async function announceRota(channelId) {
     console.error("Error announcing rota:", error);
   }
 }
-
-// Start the announcement schedule
-scheduleRotaAnnouncement("C058NGRG4ES");
 
 module.exports = app;
