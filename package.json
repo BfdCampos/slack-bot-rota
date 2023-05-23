@@ -2,9 +2,10 @@
   "name": "slack-bot-rota",
   "version": "1.0.0",
   "description": "This is a slack bot that allows the user to create a rota for specified slack users.",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "dev": "nodemon app.js"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +17,8 @@
     "csv-writer": "^1.6.0",
     "dotenv": "^16.0.3",
     "mongoose": "^7.2.0",
-    "node-cron": "^3.0.2"
+    "node-cron": "^3.0.2",
+    "nodemon": "^2.0.22"
   },
   "devDependencies": {
     "eslint": "^8.41.0",
