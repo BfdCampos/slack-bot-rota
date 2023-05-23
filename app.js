@@ -8,6 +8,10 @@ const cron = require("node-cron");
 
 const Rota = require("./modules/rota");
 
+cron.schedule("* * * * *", () => {
+  console.log("running a task every minute");
+});
+
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   receiver: new SocketModeReceiver({
@@ -40,6 +44,7 @@ const rota = new Rota();
   const daysInCronFormat = rota.days.map((day) => daysMapping[day]).join(",");
 
   const cronTime = `${minute} ${hour} * * ${daysInCronFormat}`;
+  console.log("Cron time:", cronTime);
 
   cron.schedule(cronTime, async () => {
     // This will run every day at the specified time
@@ -172,26 +177,6 @@ app.command("/rota", async ({ command, ack, respond }) => {
 
   await respond({ text: responseText });
 });
-
-// Send the current rota user to a channel every day at a specific time
-function scheduleRotaAnnouncement(channelId) {
-  // Calculate time until next announcement
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(13, 56, 0, 0); // 9 AM
-  const msUntilTomorrow = tomorrow - now;
-
-  // Schedule first announcement
-  setTimeout(() => {
-    announceRota(channelId);
-
-    // Schedule all following announcements
-    setInterval(() => {
-      announceRota(channelId);
-    }, 24 * 60 * 60 * 1000); // Every 24 hours
-  }, msUntilTomorrow);
-}
 
 // Send a message to a channel with the current rota user
 async function announceRota(channelId) {
