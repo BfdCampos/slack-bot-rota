@@ -111,6 +111,11 @@ class Rota {
     const maxOrder = Math.max(...this.users.map((user) => user.order))
     user.order = maxOrder + 1
 
+    // Subtract 1 from every user's order
+    for (const user of this.users) {
+      user.order -= 1
+    }
+
     // Save the updated user data
     this.save()
 
