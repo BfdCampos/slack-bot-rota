@@ -5,6 +5,7 @@ const createCsvWriter = require("csv-writer").createObjectCsvWriter;
 class Rota {
   constructor() {
     this.users = [];
+    this.admins = ["bruno.campos"];
     this.time = "08:00";
     this.csvWriter = createCsvWriter({
       path: "storage/users.csv",
@@ -182,9 +183,9 @@ class Rota {
     // Write the user records to the CSV file
     this.csvWriter.writeRecords(records);
 
-    // Save days to schedule.json
+    // Save days to storage/schedule.json
     fs.writeFile(
-      "./schedule.json",
+      "./storage/schedule.json",
       JSON.stringify({ days: this.days, time: this.time }),
       (error) => {
         if (error) {
@@ -216,7 +217,7 @@ class Rota {
 
   loadSchedule() {
     return new Promise((resolve, reject) => {
-      fs.readFile("schedule.json", (err, data) => {
+      fs.readFile("storage/schedule.json", (err, data) => {
         if (err) reject(err);
         else {
           const schedule = JSON.parse(data);
@@ -226,6 +227,62 @@ class Rota {
         }
       });
     });
+  }
+
+  addAdmin(userId) {
+    // load current admins
+    const admins = this.loadAdmins();
+
+    if (!admins.includes(userId)) {
+      admins.push(userId);
+      this.saveAdmins(admins);
+      return `<@${userId}> is now a rota admin.`;
+    } else {
+      return `<@${userId}> is already a rota admin.`;
+    }
+  }
+
+  removeAdmin(userId) {
+    // load current admins
+    const admins = this.loadAdmins();
+    const index = admins.indexOf(userId);
+
+    if (index > -1) {
+      admins.splice(index, 1);
+      this.saveAdmins(admins);
+      return `<@${userId}> is no longer a rota admin.`;
+    } else {
+      return `<@${userId}> is not a rota admin.`;
+    }
+  }
+
+  listAdmins() {
+    const admins = this.loadAdmins();
+    if (admins.length === 0) {
+      return "There are currently no rota admins.";
+    } else {
+      const adminMentions = admins.map((userId) => `<@${userId}>`);
+      return `Rota Admins: ${adminMentions.join(", ")}`;
+    }
+  }
+
+  loadAdmins() {
+    let admins;
+    try {
+      admins = JSON.parse(fs.readFileSync("./storage/admins.json"));
+    } catch (error) {
+      admins = [];
+    }
+    return admins;
+  }
+
+  saveAdmins(admins) {
+    fs.writeFileSync("./storage/admins.json", JSON.stringify(admins));
+  }
+
+  isAdmin(userId) {
+    const admins = this.loadAdmins();
+    return admins.includes(userId);
   }
 }
 

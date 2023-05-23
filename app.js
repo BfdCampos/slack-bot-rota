@@ -23,6 +23,8 @@ const rota = new Rota();
 
 (async () => {
   await rota.load()
+  await rota.loadSchedule()
+  rota.addAdmin('U022D1F2XTR')
   await app.start()
   console.log('⚡️ Bolt app is running!')
 })()
@@ -42,29 +44,83 @@ app.command('/test_announce_rota', async ({ command, ack, respond }) => {
 app.command('/rota', async ({ command, ack, respond }) => {
   await ack()
   // Parse the text of the command to determine what action to take
+  const parts = command.text.split(' ')
   const action = command.text.split(' ')[0]
   const username = command.text.split(' ')[1]
   const order = command.text.split(' ')[2]
 
+  if (action === 'admin') {
+    const subAction = parts[1]
+    const username = parts[2]
+    const userId = username.replace(/[<@|>]/g, '')
+
+    if (!rota.isAdmin(command.user_id)) {
+      return await respond({
+        text: 'You do not have permission to perform this action.'
+      })
+    }
+
+    let responseText = ''
+    if (subAction === 'add') {
+      responseText = rota.addAdmin(userId)
+    } else if (subAction === 'remove') {
+      responseText = rota.removeAdmin(userId)
+    } else if (subAction === 'list') {
+      responseText = rota.listAdmins()
+    } else {
+      responseText =
+        'Invalid command. Use /rota admin add @user, /rota admin remove @user, or /rota admin list.'
+    }
+
+    await respond({ text: responseText })
+  }
+
   let responseText = ''
 
   if (action === 'add') {
+    if (!rota.isAdmin(command.user_id)) {
+      return await respond({
+        text: 'Only rota admins can modify the rota.'
+      })
+    }
     responseText = rota.add(username, order)
     await rota.save()
   } else if (action === 'remove') {
+    if (!rota.isAdmin(command.user_id)) {
+      return await respond({
+        text: 'Only rota admins can modify the rota.'
+      })
+    }
     responseText = rota.remove(username)
     await rota.save()
   } else if (action === 'list') {
+    if (!rota.isAdmin(command.user_id)) {
+      return await respond({
+        text: 'Only rota admins can modify the rota.'
+      })
+    }
     responseText = rota.list()
   } else if (action === 'change_order') {
+    if (!rota.isAdmin(command.user_id)) {
+      return await respond({
+        text: 'Only rota admins can modify the rota.'
+      })
+    }
     responseText = rota.changeOrder(username, order)
   } else if (action === 'set_days') {
+    if (!rota.isAdmin(command.user_id)) {
+      return await respond({
+        text: 'Only rota admins can modify the rota.'
+      })
+    }
     const days = command.text.split(' ')[1]
     if (days) {
       responseText = rota.setDays(days)
     } else {
       responseText = 'Please specify the days for the rota.'
     }
+  } else if (action === 'admin') {
+    responseText = 'Admin command.'
   } else {
     responseText =
       "Sorry, I don't understand that command. Try /rota add @user, /rota remove @user, or /rota list."
