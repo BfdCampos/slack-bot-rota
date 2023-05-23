@@ -164,7 +164,7 @@ app.command("/rota", async ({ command, ack, respond }) => {
       responseText = "Please specify the time for the rota.";
     }
   } else if (action === "admin") {
-    responseText = "Admin command.";
+    console.log("admin command");
   } else {
     responseText =
       "Sorry, I don't understand that command. Try /rota add @user, /rota remove @user, or /rota list.";
