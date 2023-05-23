@@ -1,171 +1,183 @@
-require('dotenv').config()
+require("dotenv").config();
 
-const { App, LogLevel, SocketModeReceiver } = require('@slack/bolt')
-const fs = require('fs')
-const csvParser = require('csv-parser')
-const createCsvWriter = require('csv-writer').createObjectCsvWriter
+const { App, LogLevel, SocketModeReceiver } = require("@slack/bolt");
+const fs = require("fs");
+const csvParser = require("csv-parser");
+const createCsvWriter = require("csv-writer").createObjectCsvWriter;
 
-const Rota = require('./modules/rota')
+const Rota = require("./modules/rota");
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
   receiver: new SocketModeReceiver({
-    appToken: process.env.SLACK_APP_TOKEN
+    appToken: process.env.SLACK_APP_TOKEN,
   }),
-  logLevel: LogLevel.DEBUG
-})
+  logLevel: LogLevel.DEBUG,
+});
 
-app.message('hello', async ({ message, say }) => {
-  await say(`Hello <@${message.user}>`)
-})
+app.message("hello", async ({ message, say }) => {
+  await say(`Hello <@${message.user}>`);
+});
 
 const rota = new Rota();
 
 (async () => {
-  await rota.load()
-  await rota.loadSchedule()
-  rota.addAdmin('U022D1F2XTR')
-  await app.start()
-  console.log('⚡️ Bolt app is running!')
-})()
+  await rota.load();
+  await rota.loadSchedule();
+  rota.addAdmin("U022D1F2XTR");
+  await app.start();
+  console.log("⚡️ Bolt app is running!");
+})();
 
-app.command('/test_announce_rota', async ({ command, ack, respond }) => {
+app.command("/test_announce_rota", async ({ command, ack, respond }) => {
   // Acknowledge command request
-  await ack()
+  await ack();
 
   try {
-    await announceRota(command.channel_id)
-    await respond('Announcement sent!')
+    await announceRota(command.channel_id);
+    await respond("Announcement sent!");
   } catch (error) {
-    await respond(`Failed to send announcement: ${error.message}`)
+    await respond(`Failed to send announcement: ${error.message}`);
   }
-})
+});
 
-app.command('/rota', async ({ command, ack, respond }) => {
-  await ack()
+app.command("/rota", async ({ command, ack, respond }) => {
+  await ack();
   // Parse the text of the command to determine what action to take
-  const parts = command.text.split(' ')
-  const action = command.text.split(' ')[0]
-  const username = command.text.split(' ')[1]
-  const order = command.text.split(' ')[2]
+  const parts = command.text.split(" ");
+  const action = command.text.split(" ")[0];
+  const username = command.text.split(" ")[1];
+  const order = command.text.split(" ")[2];
 
-  if (action === 'admin') {
-    const subAction = parts[1]
-    const username = parts[2]
-    const userId = username.replace(/[<@|>]/g, '')
+  if (action === "admin") {
+    const subAction = parts[1];
+    const username = parts[2];
+    const userId = username.replace(/[<@|>]/g, "");
 
     if (!rota.isAdmin(command.user_id)) {
       return await respond({
-        text: 'You do not have permission to perform this action.'
-      })
+        text: "You do not have permission to perform this action.",
+      });
     }
 
-    let responseText = ''
-    if (subAction === 'add') {
-      responseText = rota.addAdmin(userId)
-    } else if (subAction === 'remove') {
-      responseText = rota.removeAdmin(userId)
-    } else if (subAction === 'list') {
-      responseText = rota.listAdmins()
+    let responseText = "";
+    if (subAction === "add") {
+      responseText = rota.addAdmin(userId);
+    } else if (subAction === "remove") {
+      responseText = rota.removeAdmin(userId);
+    } else if (subAction === "list") {
+      responseText = rota.listAdmins();
     } else {
       responseText =
-        'Invalid command. Use /rota admin add @user, /rota admin remove @user, or /rota admin list.'
+        "Invalid command. Use /rota admin add @user, /rota admin remove @user, or /rota admin list.";
     }
 
-    await respond({ text: responseText })
+    await respond({ text: responseText });
   }
 
-  let responseText = ''
+  let responseText = "";
 
-  if (action === 'add') {
+  if (action === "add") {
     if (!rota.isAdmin(command.user_id)) {
       return await respond({
-        text: 'Only rota admins can modify the rota.'
-      })
+        text: "Only rota admins can modify the rota.",
+      });
     }
-    responseText = rota.add(username, order)
-    await rota.save()
-  } else if (action === 'remove') {
+    responseText = rota.add(username, order);
+    await rota.save();
+  } else if (action === "remove") {
     if (!rota.isAdmin(command.user_id)) {
       return await respond({
-        text: 'Only rota admins can modify the rota.'
-      })
+        text: "Only rota admins can modify the rota.",
+      });
     }
-    responseText = rota.remove(username)
-    await rota.save()
-  } else if (action === 'list') {
+    responseText = rota.remove(username);
+    await rota.save();
+  } else if (action === "list") {
     if (!rota.isAdmin(command.user_id)) {
       return await respond({
-        text: 'Only rota admins can modify the rota.'
-      })
+        text: "Only rota admins can modify the rota.",
+      });
     }
-    responseText = rota.list()
-  } else if (action === 'change_order') {
+    responseText = rota.list();
+  } else if (action === "change_order") {
     if (!rota.isAdmin(command.user_id)) {
       return await respond({
-        text: 'Only rota admins can modify the rota.'
-      })
+        text: "Only rota admins can modify the rota.",
+      });
     }
-    responseText = rota.changeOrder(username, order)
-  } else if (action === 'set_days') {
+    responseText = rota.changeOrder(username, order);
+  } else if (action === "set_days") {
     if (!rota.isAdmin(command.user_id)) {
       return await respond({
-        text: 'Only rota admins can modify the rota.'
-      })
+        text: "Only rota admins can modify the rota.",
+      });
     }
-    const days = command.text.split(' ')[1]
+    const days = command.text.split(" ")[1];
     if (days) {
-      responseText = rota.setDays(days)
+      responseText = rota.setDays(days);
     } else {
-      responseText = 'Please specify the days for the rota.'
+      responseText = "Please specify the days for the rota.";
     }
-  } else if (action === 'admin') {
-    responseText = 'Admin command.'
+  } else if (action === "set_time") {
+    if (!rota.isAdmin(command.user_id)) {
+      return await respond({
+        text: "Only rota admins can modify the rota.",
+      });
+    }
+    const time = command.text.split(" ")[1];
+    if (time) {
+      responseText = rota.setTime(time);
+    } else {
+      responseText = "Please specify the time for the rota.";
+    }
+  } else if (action === "admin") {
+    responseText = "Admin command.";
   } else {
     responseText =
-      "Sorry, I don't understand that command. Try /rota add @user, /rota remove @user, or /rota list."
+      "Sorry, I don't understand that command. Try /rota add @user, /rota remove @user, or /rota list.";
   }
 
-  await respond({ text: responseText })
-})
+  await respond({ text: responseText });
+});
 
 // Send the current rota user to a channel every day at a specific time
-function scheduleRotaAnnouncement (channelId) {
+function scheduleRotaAnnouncement(channelId) {
   // Calculate time until next announcement
-  const now = new Date()
-  const tomorrow = new Date(now)
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  tomorrow.setHours(13, 56, 0, 0) // 9 AM
-  const msUntilTomorrow = tomorrow - now
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(13, 56, 0, 0); // 9 AM
+  const msUntilTomorrow = tomorrow - now;
 
   // Schedule first announcement
   setTimeout(() => {
-    announceRota(channelId)
+    announceRota(channelId);
 
     // Schedule all following announcements
     setInterval(() => {
-      announceRota(channelId)
-    }, 24 * 60 * 60 * 1000) // Every 24 hours
-  }, msUntilTomorrow)
+      announceRota(channelId);
+    }, 24 * 60 * 60 * 1000); // Every 24 hours
+  }, msUntilTomorrow);
 }
 
 // Send a message to a channel with the current rota user
-async function announceRota (channelId) {
+async function announceRota(channelId) {
   try {
-    console.log('Trying to announce rota...')
+    console.log("Trying to announce rota...");
     // Use chat.postMessage method to send a message from your app
     const result = await app.client.chat.postMessage({
       token: process.env.SLACK_BOT_TOKEN,
       channel: channelId,
-      text: rota.getCurrentUser()
-    })
-    console.log('Rota announced:', result)
+      text: rota.getCurrentUser(),
+    });
+    console.log("Rota announced:", result);
   } catch (error) {
-    console.error('Error announcing rota:', error)
+    console.error("Error announcing rota:", error);
   }
 }
 
 // Start the announcement schedule
-scheduleRotaAnnouncement('C058NGRG4ES')
+scheduleRotaAnnouncement("C058NGRG4ES");
 
-module.exports = app
+module.exports = app;
