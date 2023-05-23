@@ -7,6 +7,7 @@ const createCsvWriter = require("csv-writer").createObjectCsvWriter;
 const cron = require("node-cron");
 
 const Rota = require("./modules/rota");
+require("./modules/database");
 
 cron.schedule("* * * * *", () => {
   console.log("running a task every minute");
