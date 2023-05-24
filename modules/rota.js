@@ -31,7 +31,7 @@ class Rota {
     }
   }
 
-  add(username, order) {
+  async add(username, order) {
     if (username) {
       const userId = username.replace(/[<@|>]/g, "");
       const user = this.users.find((user) => user.userId === userId);
@@ -62,7 +62,7 @@ class Rota {
     }
   }
 
-  remove(username) {
+  async remove(username) {
     const userId = username.replace(/[<@|>]/g, "");
     const userIndex = this.users.findIndex((user) => user.userId === userId);
     if (userIndex > -1) {
@@ -74,7 +74,7 @@ class Rota {
     }
   }
 
-  list() {
+  async list() {
     let responseText = "";
 
     // List of users
@@ -96,7 +96,7 @@ class Rota {
     return responseText;
   }
 
-  getCurrentUser() {
+  async getCurrentUser() {
     if (this.users.length === 0) {
       return "No one is on duty today.";
     }
@@ -125,7 +125,7 @@ class Rota {
     return `Today's duty is on <@${user.userId}>.`;
   }
 
-  changeOrder(username, newOrder) {
+  async changeOrder(username, newOrder) {
     const userId = username.replace(/[<@|>]/g, "");
     const user = this.users.find((user) => user.userId === userId);
     const newOrderInt = parseInt(newOrder, 10);
@@ -148,14 +148,14 @@ class Rota {
     }
   }
 
-  reset() {
+  async reset() {
     for (const user of this.users) {
       user.duty_days = 0;
     }
     this.save();
   }
 
-  setDays(daysString) {
+  async setDays(daysString) {
     const daysArray = daysString
       .split(",")
       .map((day) => day.trim().toLowerCase());
@@ -172,7 +172,7 @@ class Rota {
     return `Set rota days to: ${this.days.join(", ")}.`;
   }
 
-  setTime(timeString) {
+  async setTime(timeString) {
     const time = timeString.trim();
     // check if time is valid
     if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
@@ -185,7 +185,7 @@ class Rota {
     return `Set announcement time to: ${this.time}.`;
   }
 
-  save() {
+  async save() {
     const records = this.users.map((user) => ({
       userId: user.userId,
       order: user.order,
@@ -221,7 +221,7 @@ class Rota {
     );
   }
 
-  load() {
+  async load() {
     return new Promise((resolve, reject) => {
       const users = [];
       fs.createReadStream("storage/users.csv")
@@ -252,7 +252,7 @@ class Rota {
     this.channelId = schedule.channelId;
   }
 
-  addAdmin(userId) {
+  async addAdmin(userId) {
     // load current admins
     const admins = await this.loadAdmins();
 
@@ -265,7 +265,7 @@ class Rota {
     }
   }
 
-  removeAdmin(userId) {
+  async removeAdmin(userId) {
     // load current admins
     const admins = await this.loadAdmins();
     const index = admins.indexOf(userId);
@@ -279,7 +279,7 @@ class Rota {
     }
   }
 
-  listAdmins() {
+  async listAdmins() {
     const admins = await this.loadAdmins();
     if (admins.length === 0) {
       return "There are currently no rota admins.";
@@ -294,11 +294,11 @@ class Rota {
     return admins.map((admin) => admin.userId);
   }
 
-  saveAdmins(admins) {
+  async saveAdmins(admins) {
     fs.writeFileSync("./storage/admins.json", JSON.stringify(admins));
   }
 
-  isAdmin(userId) {
+  async isAdmin(userId) {
     const admins = await this.loadAdmins();
     return admins.includes(userId);
   }
