@@ -9,9 +9,9 @@ const { PrismaClient } = require("@prisma/client");
 
 const db = new PrismaClient();
 
-cron.schedule("* * * * *", () => {
-  console.log("running a task every minute");
-});
+//cron.schedule("* * * * *", () => {
+//  console.log("running a task every minute");
+//});
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -32,7 +32,7 @@ const rota = new Rota();
   await rota.loadSchedule();
   rota.addAdmin("U022D1F2XTR");
 
-  const [hour, minute] = rota.time.split(":");
+  //  const [hour, minute] = rota.time.split(":");
   const daysMapping = {
     sun: 0,
     mon: 1,
@@ -44,24 +44,24 @@ const rota = new Rota();
   };
   const daysInCronFormat = rota.days.map((day) => daysMapping[day]).join(",");
 
-  const cronTime = `${minute} ${hour} * * ${daysInCronFormat}`;
+  //  const cronTime = `${minute} ${hour} * * ${daysInCronFormat}`;
   console.log("Cron time:", cronTime);
 
-  cron.schedule(cronTime, async () => {
-    // This will run every day at the specified time
-    const message = rota.getCurrentUser();
-    try {
-      // Use chat.postMessage method to send a message from your app
-      const result = await app.client.chat.postMessage({
-        token: process.env.SLACK_BOT_TOKEN,
-        channel: rota.channelId,
-        text: message,
-      });
-      console.log("Rota announced:", result);
-    } catch (error) {
-      console.error("Error announcing rota:", error);
-    }
-  });
+  //  cron.schedule(cronTime, async () => {
+  //    // This will run every day at the specified time
+  //    const message = rota.getCurrentUser();
+  //    try {
+  //      // Use chat.postMessage method to send a message from your app
+  //      const result = await app.client.chat.postMessage({
+  //        token: process.env.SLACK_BOT_TOKEN,
+  //        channel: rota.channelId,
+  //        text: message,
+  //      });
+  //      console.log("Rota announced:", result);
+  //    } catch (error) {
+  //      console.error("Error announcing rota:", error);
+  //    }
+  //  });
 
   await app.start();
   console.log("⚡️ Bolt app is running!");
