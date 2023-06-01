@@ -1,0 +1,41 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  slackId   String   @unique
+}
+
+enum Weekday {
+  mon
+  tue
+  wed
+  thu
+  fri
+}
+
+model Schedule {
+  id        Int      @id @default(autoincrement())
+  days      Weekday[]
+  time      String
+  channelId String
+  users     User[]
+}
+
+model User {
+  id 	    Int       @id @default(autoincrement())
+  scheduleId Int?
+  schedule  Schedule? @relation(fields: [scheduleId], references: [id])
+  userId    String
+  slackId   String
+  dutyDays  Int
+  order     Int
+}
